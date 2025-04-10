@@ -117,3 +117,39 @@ map-wkn-tm Γ⊢σ∈wΔ (lam Δ⊢ Δ⊢A Δ,A⊢F Δ,A⊢f∈F) = lam (map-wkn
 map-wkn-tm Γ⊢σ∈wΔ (app Δ⊢ Δ⊢A Δ,A⊢F Δ⊢f∈ Δ⊢x∈) rewrite rw-lemma-1 Γ⊢σ∈wΔ Δ⊢A Δ,A⊢F Δ⊢x∈ =
   app (map-wkn-con Γ⊢σ∈wΔ Δ⊢) (map-wkn-ty Γ⊢σ∈wΔ Δ⊢A) (map-wkn-ty (up Δ⊢ Γ⊢σ∈wΔ Δ⊢A) Δ,A⊢F) (map-wkn-tm Γ⊢σ∈wΔ Δ⊢f∈) (map-wkn-tm Γ⊢σ∈wΔ Δ⊢x∈)
 map-wkn-tm Γ⊢σ∈wΔ (cast Δ⊢ Δ⊢A Δ⊢B Δ⊢t∈A A≡B) = cast (map-wkn-con Γ⊢σ∈wΔ Δ⊢) (map-wkn-ty Γ⊢σ∈wΔ Δ⊢A) (map-wkn-ty Γ⊢σ∈wΔ Δ⊢B) (map-wkn-tm Γ⊢σ∈wΔ Δ⊢t∈A) (defeq-map-wkn-ty (defeq-refl-wkn _) A≡B)
+
+private
+  rw-lemma-3 : {Γ Δ : Con} → {σ : Sub Γ Δ} → Γ ⊢ σ ∈s Δ → {A : Ty Δ} → {F : Ty (Δ , A)} → {x : Tm Δ} → Δ ⊢ A → (Δ , A) ⊢ F → Δ ⊢ x ∈ A → (F [ sub x ] [ σ ]) ≡ (F [ σ ↑ A ] [ sub (x [ σ ]) ])
+  rw-lemma-3 _ _ _ _ = sub-sub-ty _ _ _ _
+
+  rw-lemma-4 : {Γ Δ : Con} → {σ : Sub Γ Δ} → Γ ⊢ σ ∈s Δ → {A T : Ty Δ} → Δ ⊢ A → Δ ⊢ T → (A [ wkn T ] [ σ ↑ T ]) ≡ (A [ σ ] [ wkn (T [ σ ]) ])
+  rw-lemma-4 _ _ _ = up-sub-ty _ _ _
+
+  rw-lemma-5 : {Γ : Con} → {A : Ty Γ} → {x : Tm Γ} → Γ ⊢ x ∈ A → (A [ wkn A ] [ sub x ]) ≡ A
+  rw-lemma-5 _ = wkn-sub-ty _ _ _
+
+  rw-lemma-6 : {Γ : Con} → {A T : Ty Γ} → {x : Tm Γ} → Γ ⊢ A → Γ ⊢ x ∈ T → (A [ wkn T ] [ sub x ]) ≡ A
+  rw-lemma-6 _ _ = wkn-sub-ty _ _ _
+
+map-sub-con : {Γ Δ : Con} → {σ : Sub Γ Δ} → Γ ⊢ σ ∈s Δ → Δ ⊢ → Γ ⊢
+map-sub-ty  : {Γ Δ : Con} → {σ : Sub Γ Δ} → Γ ⊢ σ ∈s Δ → {A : Ty Δ} → Δ ⊢ A → Γ ⊢ (A [ σ ])
+map-sub-var : {Γ Δ : Con} → {σ : Sub Γ Δ} → Γ ⊢ σ ∈s Δ → {A : Ty Δ} → {v : Var Δ} → Δ ⊢ v ∈v A → Γ ⊢ (v [ σ ]) ∈ (A [ σ ])
+map-sub-tm  : {Γ Δ : Con} → {σ : Sub Γ Δ} → Γ ⊢ σ ∈s Δ → {A : Ty Δ} → {t : Tm Δ}  → Δ ⊢ t ∈  A → Γ ⊢ (t [ σ ]) ∈ (A [ σ ])
+
+map-sub-con (sub Γ⊢ Γ⊢A Γ⊢x∈A) _ = Γ⊢
+map-sub-con (up _ Γ⊢σ∈sΔ _) (cons Δ⊢ Δ⊢A) = cons (map-sub-con Γ⊢σ∈sΔ Δ⊢) (map-sub-ty Γ⊢σ∈sΔ Δ⊢A)
+
+map-sub-ty Γ⊢σ∈sΔ (U Δ⊢) = U (map-sub-con Γ⊢σ∈sΔ Δ⊢)
+map-sub-ty Γ⊢σ∈sΔ (Pi Δ⊢ Δ⊢A Δ,A⊢F) = Pi (map-sub-con Γ⊢σ∈sΔ Δ⊢) (map-sub-ty Γ⊢σ∈sΔ Δ⊢A) (map-sub-ty (up Δ⊢ Γ⊢σ∈sΔ Δ⊢A) Δ,A⊢F)
+map-sub-ty Γ⊢σ∈sΔ (El Δ⊢ Δ⊢t∈U) = El (map-sub-con Γ⊢σ∈sΔ Δ⊢) (map-sub-tm Γ⊢σ∈sΔ Δ⊢t∈U)
+
+map-sub-var (sub _ Δ⊢T Δ⊢x∈T)   (here Δ⊢ Δ⊢A) rewrite rw-lemma-5 Δ⊢x∈T = Δ⊢x∈T
+map-sub-var (up _ Γ⊢σ∈sΔ _)     (here Δ⊢ Δ⊢A) rewrite rw-lemma-4 Γ⊢σ∈sΔ Δ⊢A Δ⊢A = var (cons (map-sub-con Γ⊢σ∈sΔ Δ⊢) (map-sub-ty Γ⊢σ∈sΔ Δ⊢A)) (map-wkn-ty (wkn (map-sub-con Γ⊢σ∈sΔ Δ⊢) (map-sub-ty Γ⊢σ∈sΔ Δ⊢A)) (map-sub-ty Γ⊢σ∈sΔ Δ⊢A)) (here (map-sub-con Γ⊢σ∈sΔ Δ⊢) (map-sub-ty Γ⊢σ∈sΔ Δ⊢A))
+map-sub-var (sub _ _ Δ⊢x∈T)     (there Δ⊢ Δ⊢A Δ⊢T Δ⊢v∈A) rewrite rw-lemma-6 Δ⊢A Δ⊢x∈T = var Δ⊢ Δ⊢A Δ⊢v∈A
+map-sub-var (up _ Γ⊢σ∈sΔ Δ⊢x∈T) (there Δ⊢ Δ⊢A Δ⊢T Δ⊢v∈A) rewrite rw-lemma-4 Γ⊢σ∈sΔ Δ⊢A Δ⊢T = map-wkn-tm (wkn (map-sub-con Γ⊢σ∈sΔ Δ⊢) (map-sub-ty Γ⊢σ∈sΔ Δ⊢T)) (map-sub-var Γ⊢σ∈sΔ Δ⊢v∈A)
+
+map-sub-tm Γ⊢σ∈wΔ (var Δ⊢ Δ⊢A Δ⊢v∈vA) = map-sub-var Γ⊢σ∈wΔ Δ⊢v∈vA
+map-sub-tm Γ⊢σ∈wΔ (lam Δ⊢ Δ⊢A Δ,A⊢F Δ,A⊢f∈F) = lam (map-sub-con Γ⊢σ∈wΔ Δ⊢) (map-sub-ty Γ⊢σ∈wΔ Δ⊢A) (map-sub-ty (up Δ⊢ Γ⊢σ∈wΔ Δ⊢A) Δ,A⊢F) (map-sub-tm (up Δ⊢ Γ⊢σ∈wΔ Δ⊢A) Δ,A⊢f∈F)
+map-sub-tm Γ⊢σ∈wΔ (app Δ⊢ Δ⊢A Δ,A⊢F Δ⊢f∈ Δ⊢x∈) rewrite rw-lemma-3 Γ⊢σ∈wΔ Δ⊢A Δ,A⊢F Δ⊢x∈ =
+  app (map-sub-con Γ⊢σ∈wΔ Δ⊢) (map-sub-ty Γ⊢σ∈wΔ Δ⊢A) (map-sub-ty (up Δ⊢ Γ⊢σ∈wΔ Δ⊢A) Δ,A⊢F) (map-sub-tm Γ⊢σ∈wΔ Δ⊢f∈) (map-sub-tm Γ⊢σ∈wΔ Δ⊢x∈)
+map-sub-tm Γ⊢σ∈wΔ (cast Δ⊢ Δ⊢A Δ⊢B Δ⊢t∈A A≡B) = cast (map-sub-con Γ⊢σ∈wΔ Δ⊢) (map-sub-ty Γ⊢σ∈wΔ Δ⊢A) (map-sub-ty Γ⊢σ∈wΔ Δ⊢B) (map-sub-tm Γ⊢σ∈wΔ Δ⊢t∈A) (defeq-map-sub-ty (defeq-refl-sub _) A≡B)
